@@ -11,7 +11,11 @@ const tagSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Bug'
     }
-  ]
+  ],
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 })
 
 tagSchema.set('toJSON', {

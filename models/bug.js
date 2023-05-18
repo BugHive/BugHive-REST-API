@@ -24,7 +24,11 @@ const bugSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tag'
     }
-  ]
+  ],
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 })
 
 bugSchema.set('toJSON', {
