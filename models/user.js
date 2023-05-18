@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const uniqueValidator = require('mongoose-unique-validator')
+const { isEmail } = require('validator')
 
 const userSchema = mongoose.Schema({
   username: {
@@ -7,8 +8,20 @@ const userSchema = mongoose.Schema({
     required: true,
     unique: true
   },
-  name: String,
-  passwordHash: String,
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    validate: {
+      validator: isEmail,
+      message: 'email must be of the form example@mail.com'
+    }
+  },
+  passwordHash: {
+    type: String,
+    required: true
+  },
   darkMode: Boolean,
   bugs: [
     {
