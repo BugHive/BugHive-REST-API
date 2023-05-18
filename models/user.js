@@ -22,7 +22,10 @@ const userSchema = mongoose.Schema({
     type: String,
     required: true
   },
-  darkMode: Boolean,
+  darkMode: {
+    type: Boolean,
+    defalut: false // TODO: read it from the browser in the frontend
+  },
   bugs: [
     {
       type: mongoose.Schema.Types.ObjectId,
