@@ -43,9 +43,13 @@ usersRouter.get('/', async (request, response) => {
 
 usersRouter.get('/:id', tokenExtractor, userExtractor, async (request, response) => {
   const user = await User
-    .findOne({ username: request.user.username })
+    .findById(request.params.id)
     .populate('tags', { title: 1, bugs: 1 })
     .populate('bugs', { title: 1, description: 1, lastModified: 1, references: 1, tags: 1 })
+
+  if (!user) {
+    return response.status(404).end()
+  }
 
   if (user.id !== request.user.id) {
     return response.status(401).json({ error: 'a user can only view themselves' })

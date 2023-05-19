@@ -3,8 +3,7 @@ const mongoose = require('mongoose')
 const tagSchema = new mongoose.Schema({
   title: {
     type: String,
-    minlength: 5,
-    required: true
+    required: true,
   },
   bugs: [
     {

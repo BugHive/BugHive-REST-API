@@ -3,10 +3,12 @@ const logger = require('./utils/logger')
 const mongoose = require('mongoose')
 const express = require('express')
 require('express-async-errors')
+const cors = require('cors')
 const middleware = require('./utils/middleware')
 
 const loginController = require('./controllers/login')
 const usersController = require('./controllers/users')
+const bugsController = require('./controllers/bugs')
 
 // express app creation
 const app = express()
@@ -23,6 +25,7 @@ mongoose.connect(config.MONGODB_URI)
   })
 
 // middleware functions
+app.use(cors())
 app.use(express.json())
 app.use(middleware.requestLogger)
 
@@ -30,6 +33,7 @@ app.use(middleware.requestLogger)
 // middleware routes
 app.use('/api/login', loginController)
 app.use('/api/users', usersController)
+app.use('/api/bugs', middleware.tokenExtractor, middleware.userExtractor, bugsController)
 
 
 // middleware error handlers
