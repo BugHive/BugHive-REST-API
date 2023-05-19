@@ -3,6 +3,7 @@ const logger = require('./utils/logger')
 const mongoose = require('mongoose')
 const express = require('express')
 require('express-async-errors')
+const cors = require('cors')
 const middleware = require('./utils/middleware')
 
 const loginController = require('./controllers/login')
@@ -24,6 +25,7 @@ mongoose.connect(config.MONGODB_URI)
   })
 
 // middleware functions
+app.use(cors())
 app.use(express.json())
 app.use(middleware.requestLogger)
 
