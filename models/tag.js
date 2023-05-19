@@ -1,10 +1,12 @@
 const mongoose = require('mongoose')
+const uniqueValidator = require('mongoose-unique-validator')
 
 const tagSchema = new mongoose.Schema({
   title: {
     type: String,
     minlength: 5,
-    required: true
+    required: true,
+    uniuqe: true
   },
   bugs: [
     {
@@ -17,6 +19,8 @@ const tagSchema = new mongoose.Schema({
     ref: 'User'
   }
 })
+
+tagSchema.plugin(uniqueValidator)
 
 tagSchema.set('toJSON', {
   transform: (document, returnedObject) => {
