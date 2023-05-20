@@ -1,40 +1,40 @@
 const { ObjectId } = require('mongodb')
 const bugsRouter = require('express').Router()
-const User = require('../models/user')
 const Bug = require('../models/bug')
 const Tag = require('../models/tag')
-const helper = require('./helper')
 
 
 bugsRouter.post('/', async (request, response) => {
   const body = request.body
-  const user = await User.findById(request.user.id)
-
-  const tags = [] /*await helper.generateTags(body.tags, user)*/
+  const user = request.user
 
   const bug = new Bug({
     title: body.title,
     description: body.description,
     lastModifeid: body.lastModifeid,
     references: body.references,
-    user: user.id,
-    tags: tags.map(tag => new ObjectId(tag.id))
+    user: new ObjectId(user.id),
+    tags: body.tags
+      ? body.tags.map(tag => new ObjectId(tag))
+      : []
   })
   const savedBug = await bug.save()
 
-  for (let tag of tags) {
+  user.bugs = user.bugs.concat(new ObjectId(savedBug.id))
+  await user.save()
+
+  for (let tagId of bug.tags) {
+    const tag = await Tag.findById(tagId.toString())
     tag.bugs = tag.bugs.concat(new ObjectId(savedBug.id))
     await tag.save()
   }
-
-  user.bugs = user.bugs.concat(new ObjectId(savedBug.id))
-  await user.save()
 
   response.status(201).json(savedBug)
 })
 
 bugsRouter.get('/', async (request, response) => {
-  const user = await User.findById(request.user.id)
+  const user = request.user
+
   const bugs = await Bug
     .find({ user: new ObjectId(user.id) })
     .populate('tags', { title: 1 })
@@ -43,6 +43,8 @@ bugsRouter.get('/', async (request, response) => {
 })
 
 bugsRouter.get('/:id', async (request, response) => {
+  const user = request.user
+
   const bug = await Bug
     .findById(request.params.id)
     .populate('tags', { title: 1 })
@@ -51,7 +53,7 @@ bugsRouter.get('/:id', async (request, response) => {
     return response.status(404).end()
   }
 
-  if (bug.user.toString() !== request.user.id) {
+  if (bug.user.toString() !== user.id) {
     return response.status(401).json({ error: 'a user can only view their bugs' })
   }
 
@@ -59,14 +61,14 @@ bugsRouter.get('/:id', async (request, response) => {
 })
 
 bugsRouter.delete('/', async (request, response) => {
-  const user = await User.findById(request.user.id)
-  const tags = await Tag.find({ user: new ObjectId(user.id) })
+  const user = request.user
 
   await Bug.deleteMany({ user: new ObjectId(user.id) })
 
   user.bugs = []
   await user.save()
 
+  const tags = await Tag.find({ user: new ObjectId(user.id) })
   for (let tag of tags) {
     tag.bugs = []
     await tag.save()
@@ -77,7 +79,7 @@ bugsRouter.delete('/', async (request, response) => {
 
 
 bugsRouter.delete('/:id', async (request, response) => {
-  const user = await User.findById(request.user.id)
+  const user = request.user
   const bug = await Bug.findById(request.params.id)
 
   if (!bug) {
@@ -87,15 +89,18 @@ bugsRouter.delete('/:id', async (request, response) => {
     return response.status(401).json({ error: 'a user can only delete their bugs' })
   }
 
-  const tags = [] /*await Tag.find({ $and: [{ user: new ObjectId(user.id) }, { bugs: new ObjectId(bug.id) }] })*/
-
   await Bug.findByIdAndRemove(request.params.id)
+
+  // remove the bug from user's bugs
   user.bugs = user.bugs.filter(bug => bug.toString() !== request.params.id)
   await user.save()
 
-  for (let tag of tags) {
-    tag.bugs = tag.bugs.filter(bug => bug.id.toString() !== request.params.id)
-    await tag.save()
+  // remove the bug from user's tags
+  const bugTags = await Tag.find({ $and: [ { user: new ObjectId(user.id) }, { bugs: new ObjectId(bug.id) } ] })
+
+  for (let bugTag of bugTags) {
+    bugTag.bugs = bugTag.bugs.filter(bug => bug.toString() !== bug.id)
+    await bugTag.save()
   }
 
   response.status(204).end()
@@ -103,8 +108,8 @@ bugsRouter.delete('/:id', async (request, response) => {
 
 bugsRouter.put('/:id', async (request, response) => {
   const body = request.body
+  const user = request.user
 
-  const user = await User.findById(request.user.id)
   const bug = await Bug.findById(request.params.id)
 
   if (!bug) {
@@ -115,28 +120,30 @@ bugsRouter.put('/:id', async (request, response) => {
     return response.status(401).json({ error: 'a user can only update their bugs' })
   }
 
-  // const oldTags = await Tag.find({ $and: [{ user: new ObjectId(user.id) }, { bugs: new ObjectId(bug.id) }] })
-  // const newTags = await helper.generateTags(body.tags, user)
+  const bugOldTags = await Tag.find({ $and: [ { user: new ObjectId(user.id) }, { bugs: new ObjectId(bug.id) } ] })
 
   const newBugData = {
     title: body.title,
     description: body.description,
     lastModifeid: body.lastModifeid,
     references: body.references,
-    // tags: newTags.map(tag => new ObjectId(tag.id))
+    tags: body.tags
+      ? body.tags.map(tag => new Object(tag))
+      : []
   }
 
   const updatedBug = await Bug.findByIdAndUpdate(request.params.id, newBugData, { new: true })
 
-  // for (let tag of oldTags) {
-  //   tag.bugs = tag.bugs.filter(bug => bug.id.toString() !== request.params.id)
-  //   await tag.save()
-  // }
+  for(let tag of bugOldTags) {
+    tag.bugs = tag.bugs.filter(bug => bug.toString() !== updatedBug.id)
+  }
 
-  // for (let tag of newTags) {
-  //   tag.bugs = tag.bugs.concat(new ObjectId(bug.id))
-  //   await tag.save()
-  // }
+  const bugNewTags = newBugData.tags
+  for(let tagId of bugNewTags) {
+    const tag = await Tag.findById(tagId.toString())
+    tag.bugs = tag.bugs.concat(new ObjectId(updatedBug.id))
+    await tag.save()
+  }
 
   response.json(updatedBug)
 })
