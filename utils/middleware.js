@@ -43,7 +43,7 @@ const tokenExtractor = (request, response, next) => {
 /**
  * represents jwt validation functionality,
  * it should be use in each route that requires
- * user's identification.
+ * user's authentication.
  */
 const userExtractor = async (request, response, next) => {
   if (!request.token) {
@@ -56,6 +56,10 @@ const userExtractor = async (request, response, next) => {
   }
 
   const user = await User.findById(decodedToken.id)
+
+  if(!user) {
+    return response.status(401).json({ error: 'token invalid' })
+  }
   request.user = user
 
   next()
