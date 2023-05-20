@@ -22,12 +22,14 @@ const bugSchema = new mongoose.Schema({
   tags: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Tag'
+      ref: 'Tag',
+      required: true
     }
   ],
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'User',
+    required: true
   }
 })
 

@@ -9,6 +9,7 @@ const middleware = require('./utils/middleware')
 const loginController = require('./controllers/login')
 const usersController = require('./controllers/users')
 const bugsController = require('./controllers/bugs')
+const tagsController = require('./controllers/tags')
 
 // express app creation
 const app = express()
@@ -34,6 +35,7 @@ app.use(middleware.requestLogger)
 app.use('/api/login', loginController)
 app.use('/api/users', usersController)
 app.use('/api/bugs', middleware.tokenExtractor, middleware.userExtractor, bugsController)
+app.use('/api/tags', middleware.tokenExtractor, middleware.userExtractor, tagsController)
 
 
 // middleware error handlers

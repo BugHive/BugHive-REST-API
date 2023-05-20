@@ -166,7 +166,9 @@ describe('testing /api/users different endpoints', () => {
           username: 'test',
           email: 'test@gmail.com',
           password: 'password',
-          darkMode: true
+          darkMode: true,
+          bugs: [],
+          tags: []
         }
 
         const response = await api

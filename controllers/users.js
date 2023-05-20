@@ -12,12 +12,14 @@ const { tokenExtractor, userExtractor } = require('../utils/middleware')
 usersRouter.post('/', async (request, response) => {
   const { username, email, password } = request.body
 
+  // validating the password
   if (!password || password.length < 6) {
     return response.status(400).send({
       error: 'password must be at least 6 characters long'
     })
   }
 
+  // generating a password hash
   const saltRounds = 10
   const passwordHash = await bcrypt.hash(password, saltRounds)
 
@@ -27,9 +29,10 @@ usersRouter.post('/', async (request, response) => {
     passwordHash
   })
 
+  // saving the user to the database
   const savedUser = await user.save()
-  response.status(201).json(savedUser)
 
+  response.status(201).json(savedUser)
 })
 
 usersRouter.get('/', async (request, response) => {
@@ -61,6 +64,10 @@ usersRouter.get('/:id', tokenExtractor, userExtractor, async (request, response)
 usersRouter.delete('/:id', tokenExtractor, userExtractor, async (request, response) => {
   const user = await User.findById(request.params.id)
 
+  if (!user) {
+    return response.status(404).end()
+  }
+
   if (user.id !== request.user.id) {
     return response.status(401).json({ error: 'a user can only delete themselves' })
   }
@@ -73,17 +80,25 @@ usersRouter.delete('/:id', tokenExtractor, userExtractor, async (request, respon
 })
 
 usersRouter.put('/:id', tokenExtractor, userExtractor, async (request, response) => {
+  const body = request.body
   const user = await User.findById(request.params.id)
+
+  if (!user) {
+    return response.status(404).end()
+  }
 
   if (user.id !== request.user.id) {
     return response.status(401).json({ error: 'a user can only update themselves' })
   }
 
-  if (!request.body.password || request.body.password.length < 6) {
+  // validating the new password
+  if (!body.password || body.password.length < 6) {
     response.status(400).send({
       error: 'password must be at least 6 characters long'
     })
   }
+
+  // generating a password hash
   const saltRounds = 10
   const passwordHash = await bcrypt.hash(request.body.password, saltRounds)
 
@@ -92,9 +107,16 @@ usersRouter.put('/:id', tokenExtractor, userExtractor, async (request, response)
     email: request.body.email,
     passwordHash,
     darkMode: request.body.darkMode,
+    bugs: body.bugs
+      ? body.bugs.map(bug => new ObjectId(bug))
+      : [],
+    tags: body.tags
+      ? body.tags.map(tag => new ObjectId(tag))
+      : []
   }
 
   const updatedUser = await User.findByIdAndUpdate(request.params.id, updatedUserData, { new: true })
+
   response.json(updatedUser)
 })
 
