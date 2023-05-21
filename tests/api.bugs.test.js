@@ -125,7 +125,7 @@ describe('testing /api/bugs different endpoints', () => {
 
     }, 10000)
 
-    test('a valid bug with invalid jwt token in not added', async () => {
+    test('a valid bug without a jwt token in not added', async () => {
       const bugData = {
         title: 'Segmentation fault',
         description: 'This bug happens in c langauge due to ...',
