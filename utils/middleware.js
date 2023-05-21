@@ -3,10 +3,13 @@ const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
 const User = require('../models/user')
 
-const requestLogger = (request, response, next) => {
-  morgan(':method :url :status :res[content-length] - :response-time ms :post_body')
-  next()
-}
+morgan.token('post_body', function (request) {
+  if (request.method === 'POST') {
+    return JSON.stringify(request.body)
+  }
+  return null
+})
+const requestLogger =  morgan(':method :url :status :res[content-length] - :response-time ms :post_body')
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
