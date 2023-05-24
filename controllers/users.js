@@ -1,15 +1,12 @@
 const bcrypt = require('bcrypt')
 const { ObjectId } = require('mongodb')
-const usersRouter = require('express').Router()
+const { isValidObjectId } = require('../utils/helper')
 const User = require('../models/user')
 const Bug = require('../models/bug')
 const Tag = require('../models/tag')
-const { tokenExtractor, userExtractor } = require('../utils/middleware')
 
-/**
- * posting a user represents registering a new user to the system
- */
-usersRouter.post('/', async (request, response) => {
+
+const addUser = async (request, response) => {
   const { username, email, password } = request.body
 
   // validating the password
@@ -33,18 +30,18 @@ usersRouter.post('/', async (request, response) => {
   const savedUser = await user.save()
 
   response.status(201).json(savedUser)
-})
+}
 
-usersRouter.get('/', async (request, response) => {
+const getAllUsers = async (request, response) => {
   const users = await User
     .find({})
     .populate('tags', { title: 1, bugs: 1 })
     .populate('bugs', { title: 1, description: 1, lastModified: 1, references: 1, tags: 1 })
 
   response.json(users)
-})
+}
 
-usersRouter.get('/:id', tokenExtractor, userExtractor, async (request, response) => {
+const getUser =  async (request, response) => {
   const user = await User
     .findById(request.params.id)
     .populate('tags', { title: 1, bugs: 1 })
@@ -59,9 +56,9 @@ usersRouter.get('/:id', tokenExtractor, userExtractor, async (request, response)
   }
 
   response.json(user)
-})
+}
 
-usersRouter.delete('/:id', tokenExtractor, userExtractor, async (request, response) => {
+const deleteUser =  async (request, response) => {
   const user = await User.findById(request.params.id)
 
   if (!user) {
@@ -77,11 +74,11 @@ usersRouter.delete('/:id', tokenExtractor, userExtractor, async (request, respon
   await User.findByIdAndRemove(request.params.id)
 
   response.status(204).end()
-})
+}
 
-usersRouter.put('/:id', tokenExtractor, userExtractor, async (request, response) => {
+const updateUser =  async (request, response) => {
   const body = request.body
-  const user = await User.findById(request.params.id)
+  let user = await User.findById(request.params.id)
 
   if (!user) {
     return response.status(404).end()
@@ -102,23 +99,47 @@ usersRouter.put('/:id', tokenExtractor, userExtractor, async (request, response)
   const saltRounds = 10
   const passwordHash = await bcrypt.hash(request.body.password, saltRounds)
 
-  const updatedUserData = {
-    username: request.body.username,
-    email: request.body.email,
-    passwordHash,
-    darkMode: request.body.darkMode,
-    bugs: body.bugs
-      ? body.bugs.map(bug => new ObjectId(bug))
-      : [],
-    tags: body.tags
-      ? body.tags.map(tag => new ObjectId(tag))
-      : []
+  // validating the new bugs
+  if(body.bugs) {
+    for(let bug of body.bugs) {
+      const validObjectId = await isValidObjectId(bug, Bug, user)
+      if(!validObjectId) {
+        return response.status(400).json({ error: 'A bug is not a valid bug id' })
+      }
+      bug = new ObjectId(bug)
+    }
   }
 
-  const updatedUser = await User.findByIdAndUpdate(request.params.id, updatedUserData, { new: true })
 
-  response.json(updatedUser)
-})
+  // validating the new tags
+  if(body.tags) {
+    for(let tag of body.tags) {
+      const validObjectId = await isValidObjectId(tag, Tag, user)
+      if(!validObjectId) {
+        return response.status(400).json({ error: 'A tag is not a valid tag id' })
+      }
+      tag = new ObjectId(tag)
+    }
+  }
 
-module.exports = usersRouter
+  user.username = body.username
+  user.email = body.email
+  user.passwordHash = passwordHash
+  user.darkMode = body.darkMode
+  user.bugs = body.bugs || []
+  user.tags = body.tags || []
+  await user.save()
+
+  response.json(user)
+}
+
+
+
+module.exports = {
+  addUser,
+  getAllUsers,
+  getUser,
+  deleteUser,
+  updateUser
+}
 
