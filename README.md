@@ -1,9 +1,8 @@
 # BugHive-REST-API
 
 A simple REST API backend for BugHive chrome extension.
-
-API Endpoints
-
+------------------
+## API Endpoints
 
 | Methods     | Urls             |Description            |
 | ----------- | -----------      | -----------        |
