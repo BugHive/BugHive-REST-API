@@ -24,7 +24,7 @@ const userSchema = mongoose.Schema({
   },
   darkMode: {
     type: Boolean,
-    defalut: false // TODO: read it from the browser in the frontend
+    defalut: false
   },
   bugs: [
     {

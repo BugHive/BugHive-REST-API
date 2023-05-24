@@ -1,12 +1,25 @@
 const { ObjectId } = require('mongodb')
-const bugsRouter = require('express').Router()
 const Bug = require('../models/bug')
 const Tag = require('../models/tag')
+const { isValidObjectId } = require('../utils/helper')
 
 
-bugsRouter.post('/', async (request, response) => {
+
+const addBug = async (request, response) => {
   const body = request.body
   const user = request.user
+
+  // validating the new tags
+  if(body.tags) {
+    for(let tag of body.tags) {
+      const validObjectId = await isValidObjectId(tag, Tag, user)
+      if(!validObjectId) {
+        return response.status(400).json({ error: 'A tag is not a valid tag id' })
+      }
+      tag = new ObjectId(tag)
+    }
+  }
+
 
   const bug = new Bug({
     title: body.title,
@@ -14,9 +27,7 @@ bugsRouter.post('/', async (request, response) => {
     lastModifeid: body.lastModifeid,
     references: body.references,
     user: new ObjectId(user.id),
-    tags: body.tags
-      ? body.tags.map(tag => new ObjectId(tag))
-      : []
+    tags: body.tags || []
   })
   const savedBug = await bug.save()
 
@@ -30,9 +41,9 @@ bugsRouter.post('/', async (request, response) => {
   }
 
   response.status(201).json(savedBug)
-})
+}
 
-bugsRouter.get('/', async (request, response) => {
+const getAllBugs =  async (request, response) => {
   const user = request.user
 
   const bugs = await Bug
@@ -40,9 +51,9 @@ bugsRouter.get('/', async (request, response) => {
     .populate('tags', { title: 1 })
 
   response.json(bugs)
-})
+}
 
-bugsRouter.get('/:id', async (request, response) => {
+const getBug =  async (request, response) => {
   const user = request.user
 
   const bug = await Bug
@@ -58,9 +69,9 @@ bugsRouter.get('/:id', async (request, response) => {
   }
 
   response.json(bug)
-})
+}
 
-bugsRouter.delete('/', async (request, response) => {
+const deleteAllBugs =  async (request, response) => {
   const user = request.user
 
   await Bug.deleteMany({ user: new ObjectId(user.id) })
@@ -75,10 +86,10 @@ bugsRouter.delete('/', async (request, response) => {
   }
 
   response.status(204).end()
-})
+}
 
 
-bugsRouter.delete('/:id', async (request, response) => {
+const deleteBug =  async (request, response) => {
   const user = request.user
   const bug = await Bug.findById(request.params.id)
 
@@ -104,9 +115,9 @@ bugsRouter.delete('/:id', async (request, response) => {
   }
 
   response.status(204).end()
-})
+}
 
-bugsRouter.put('/:id', async (request, response) => {
+const updateBug =  async (request, response) => {
   const body = request.body
   const user = request.user
 
@@ -120,33 +131,46 @@ bugsRouter.put('/:id', async (request, response) => {
     return response.status(401).json({ error: 'a user can only update their bugs' })
   }
 
+  // validating the new tags
+  if(body.tags) {
+    for(let tag of body.tags) {
+      const validObjectId = await isValidObjectId(tag, Tag, user)
+      if(!validObjectId) {
+        return response.status(400).json({ error: 'A tag is not a valid tag id' })
+      }
+      tag = new ObjectId(tag)
+    }
+  }
+
   const bugOldTags = await Tag.find({ $and: [ { user: new ObjectId(user.id) }, { bugs: new ObjectId(bug.id) } ] })
 
-  const newBugData = {
-    title: body.title,
-    description: body.description,
-    lastModifeid: body.lastModifeid,
-    references: body.references,
-    tags: body.tags
-      ? body.tags.map(tag => new Object(tag))
-      : []
-  }
-
-  const updatedBug = await Bug.findByIdAndUpdate(request.params.id, newBugData, { new: true })
+  bug.title = body.title
+  bug.description = body.description
+  bug.lastModifeid = body.lastModifeid
+  bug.references = body.references
+  bug.tags = body.tags || []
+  await bug.save()
 
   for(let tag of bugOldTags) {
-    tag.bugs = tag.bugs.filter(bug => bug.toString() !== updatedBug.id)
+    tag.bugs = tag.bugs.filter(bug => bug.toString() !== bug.id)
   }
 
-  const bugNewTags = newBugData.tags
+  const bugNewTags = bug.tags
   for(let tagId of bugNewTags) {
     const tag = await Tag.findById(tagId.toString())
-    tag.bugs = tag.bugs.concat(new ObjectId(updatedBug.id))
+    tag.bugs = tag.bugs.concat(new ObjectId(bug.id))
     await tag.save()
   }
 
-  response.json(updatedBug)
-})
+  response.json(bug)
+}
 
 
-module.exports = bugsRouter
+module.exports = {
+  addBug,
+  getAllBugs,
+  getBug,
+  deleteAllBugs,
+  deleteBug,
+  updateBug
+}
