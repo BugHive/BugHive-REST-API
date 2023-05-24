@@ -130,9 +130,12 @@ describe('testing /api/tags different endpoints', () => {
 
       const bugId = bugResponse.body.id
 
+      const finalBugs = await Bug.find({ user: new ObjectId(users[0].id ) })
+      expect(finalBugs.map(bug => bug.id)).toContain(bugId)
+
       const tagData = {
         title: 'Hardware',
-        bugs: [new ObjectId(bugId)]
+        bugs: [bugId]
       }
 
       const tagResponse = await api
@@ -265,7 +268,7 @@ describe('testing /api/tags different endpoints', () => {
       const updatedTag = {
         ...initialTags[0],
         title: 'RAM',
-        bugs: [new ObjectId(postedBugId)]
+        bugs: [postedBugId]
       }
 
       const response = await api

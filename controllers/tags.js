@@ -103,7 +103,7 @@ const deleteTag =  async (request, response) => {
   await user.save()
 
   // remove the tag from user's bugs
-  const tagBugs = await Bug.find({ $and: [ { user: new ObjectId(user.id) }, { tags: new ObjectId(tag.id) } ] })
+  const tagBugs = await Bug.find({ user: new ObjectId(user.id) }, { tags: new ObjectId(tag.id) } )
   for(let tagBug of tagBugs) {
     tagBug.tags = tagBug.tags.filter(tag => tag.toString() !== tag.id)
     await tagBug.save()
@@ -137,7 +137,7 @@ const updateTag =  async (request, response) => {
     }
   }
 
-  const tagOldBugs = await Bug.find({ $and: [ { user: new ObjectId(user.id) }, { tags: new ObjectId(tag.id) } ] })
+  const tagOldBugs = await Bug.find({ user: new ObjectId(user.id) }, { tags: new ObjectId(tag.id) })
 
   tag.title = body.title
   tag.bugs = body.bugs || []
