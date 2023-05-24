@@ -6,6 +6,14 @@ API Endpoints
 
 | Methods     | Urls             |Description            |
 | ----------- | -----------      | -----------        |
+| GET         | api/docs    |Get api docs in Swagger UI          |
+
+| Methods     | Urls             |Description            |
+| ----------- | -----------      | -----------        |
+| POST         | api/login    |Login a user           |
+
+| Methods     | Urls             |Description            |
+| ----------- | -----------      | -----------        |
 | GET         | api/users    |Returns a list of all the registered users           |
 | GET         | api/users/id |Get a specific user         |
 | POST        | api/users    |Create a new user         |
@@ -30,13 +38,7 @@ API Endpoints
 | DELETE        | api/tags    |Remove all the tags of the logged in user   |
 | DELETE        | api/tags/id    |Remove the tag by id of the logged in user|
 
-| Methods     | Urls             |Description            |
-| ----------- | -----------      | -----------        |
-| POST         | api/login    |Login a user           |
 
-| Methods     | Urls             |Description            |
-| ----------- | -----------      | -----------        |
-| GET         | api/tags    |Get all bugs           |
 
 
 ## Quick Start
