@@ -41,9 +41,9 @@ To start the express server in development mode, run the following.
 npm run dev
 ```
 
-## Run tests
+Run tests.
 
-```sh
+```bash
 npm test
 ```
 
